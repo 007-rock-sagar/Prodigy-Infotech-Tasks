@@ -1,0 +1,73 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# TASK 2: Data Cleaning and Exploratory Data Analysis (EDA)
+# Dataset: Titanic Passenger Data
+
+
+def load_and_inspect(url):
+    """Loads dataset and provides initial structural overview."""
+    df = pd.read_csv(url)
+    print("--- Dataset Information ---")
+    print(df.info())
+    print("\n--- Missing Values Before Cleaning ---")
+    print(df.isnull().sum())
+    return df
+
+def clean_data(df):
+    """Handles missing values, drops uninformative columns, and fixes types."""
+    print("\nCleaning data...")
+    df_cleaned = df.copy()
+    
+    df_cleaned['Age'] = df_cleaned.groupby(['Sex', 'Pclass'])['Age'].transform(lambda x: x.fillna(x.median()))
+    
+    df_cleaned['Embarked'] = df_cleaned['Embarked'].fillna(df_cleaned['Embarked'].mode()[0])
+    
+    df_cleaned.drop(columns=['Cabin'], inplace=True)
+    
+    df_cleaned['FamilySize'] = df_cleaned['SibSp'] + df_cleaned['Parch'] + 1
+    
+    print("Data cleaning complete. Remaining missing values:")
+    print(df_cleaned.isnull().sum())
+    return df_cleaned
+
+def perform_eda(df):
+    """Explores relationships, correlation patterns, and trends in the data."""
+    print("\nPerforming Exploratory Data Analysis...")
+    
+    sns.set_theme(style="whitegrid")
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    fig.suptitle('Titanic EDA: Factor Analysis & Relationships', fontsize=20, fontweight='bold')
+    
+    sns.barplot(data=df, x='Sex', y='Survived', palette='Set1', errorbar=None, ax=axes[0, 0])
+    axes[0, 0].set_title('Survival Rate by Gender', fontsize=14)
+    axes[0, 0].set_ylabel('Survival Probability')
+    
+    sns.barplot(data=df, x='Pclass', y='Survived', palette='muted', errorbar=None, ax=axes[0, 1])
+    axes[0, 1].set_title('Survival Rate by Passenger Class', fontsize=14)
+    axes[0, 1].set_ylabel('Survival Probability')
+
+    sns.boxplot(data=df, x='Survived', y='Age', palette='pastel', ax=axes[1, 0])
+    axes[1, 0].set_title('Age Distribution by Survival Status', fontsize=14)
+    axes[1, 0].set_xticklabels(['Deceased', 'Survived'])
+    
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    corr_matrix = df[numeric_cols].corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5, ax=axes[1, 1])
+    axes[1, 1].set_title('Correlation Heatmap of Numerical Features', fontsize=14)
+    
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
+
+def main():
+    url = 'https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv'
+    
+    # Execute EDA Pipeline
+    df = load_and_inspect(url)
+    cleaned_df = clean_data(df)
+    perform_eda(cleaned_df)
+
+if __name__ == "__main__":
+    main()
